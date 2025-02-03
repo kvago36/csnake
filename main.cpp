@@ -70,8 +70,6 @@ public:
 
         int randomIndex = distr(gen);
 
-         std::cout << randomIndex << std::endl;
-
         int i = static_cast<int>(empty[randomIndex].x);
         int j = static_cast<int>(empty[randomIndex].y);
 
@@ -92,14 +90,15 @@ public:
 class Game {
     Board board;
     Point food;
-    bool is_finished;
-    bool is_paused;
     std::vector<Point> snake;
     Direction direction;
 
 public:
-    Game() : board(Board()), food(Point(3.0, 3.0)), is_finished(false),
-             snake{Point(12.0, 12.0), Point(13.0, 12.0), Point(14.0, 12.0)}, direction(Direction::LEFT) {
+    bool is_finished;
+    bool is_paused;
+
+    Game() : board(Board()), food(Point(3.0, 3.0)),
+             snake{Point(12.0, 12.0), Point(13.0, 12.0), Point(14.0, 12.0)}, direction(Direction::LEFT), is_finished(false), is_paused(false) {
     };
 
     void change_direction(Direction pressed) {
@@ -131,6 +130,7 @@ public:
         assert(!snake.empty());
 
         Point old_head = snake.front();
+        Point tail = snake.back();
         Point new_head;
 
         switch (direction) {
@@ -186,6 +186,7 @@ public:
 
         if (tie == Tie::Particle) {
             is_finished = true;
+            return;
         }
 
         // if snake eat food no need to remove last piece
@@ -195,21 +196,14 @@ public:
 
         snake.insert(snake.begin(), new_head);
 
+        board.setValue(tail.x, tail.y, std::nullopt);
         board.setValue(new_head.x, new_head.y, Tie::Particle);
-    }
-
-    bool get_pause() const {
-        return is_paused;
-    }
-
-    void set_pause() {
-        is_paused = !is_paused;
     }
 };
 
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    std::cout << "Game started!" << std::endl;
 
     Game game;
 
@@ -247,7 +241,9 @@ int main() {
         Uint64 startTick = SDL_GetTicks(); // Засекаем начало кадра
 
         while (SDL_PollEvent(&event)) {
-            if (event.type == SDL_EVENT_QUIT) {
+            if (event.type == SDL_EVENT_QUIT || game.is_finished) {
+                std::cout << "Game finished!" << std::endl;
+
                 quit = true;
             }
 
@@ -273,7 +269,7 @@ int main() {
                         break;
                     case SDL_SCANCODE_P:
                     case SDL_SCANCODE_SPACE:
-                        game.set_pause();
+                        game.is_paused = !game.is_paused;
                     default:
                         break;
                 }
@@ -286,7 +282,7 @@ int main() {
 
         SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
 
-        if (!game.get_pause()) {
+        if (!game.is_paused) {
             game.move_snake();
         }
 
